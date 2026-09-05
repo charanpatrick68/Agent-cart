@@ -1,0 +1,159 @@
+// AgentCart — Prisma schema
+// This is the single source of truth for products, inventory, orders, and
+// payments. The LLM never touches this database directly — it only ever
+// sees results returned by backend tool functions (see src/agent/tools).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Users
+// ---------------------------------------------------------------------------
+
+model User {
+  id        String         @id @default(cuid())
+  name      String
+  email     String         @unique
+  createdAt DateTime       @default(now())
+
+  orders    Order[]
+  sessions  AgentSession[]
+}
+
+// ---------------------------------------------------------------------------
+// Catalog
+// ---------------------------------------------------------------------------
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  category    String
+  brand       String
+  price       Int // in paise. Always server-authoritative — never trust an LLM-provided price.
+  description String
+  attributes  Json // structured spec sheet, e.g. { ram: "16GB", gpu: "RTX 3050", batteryLifeHours: 8 }
+  imageUrl    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  inventory  Inventory?
+  offers     Offer[]
+  orderItems OrderItem[]
+
+  @@index([category])
+  @@index([brand])
+}
+
+model Inventory {
+  id        String   @id @default(cuid())
+  productId String   @unique
+  product   Product  @relation(fields: [productId], references: [id])
+  quantity  Int
+  updatedAt DateTime @updatedAt
+}
+
+model Offer {
+  id           String    @id @default(cuid())
+  productId    String
+  product      Product   @relation(fields: [productId], references: [id])
+  description  String
+  discountPct  Int? // e.g. 10 = 10% off
+  discountFlat Int? // flat paise off, alternative to discountPct
+  validUntil   DateTime?
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Agent sessions / conversation + audit trail
+// ---------------------------------------------------------------------------
+
+model AgentSession {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  startedAt DateTime @default(now())
+
+  messages AgentMessage[]
+  logs     AuditLog[]
+  orders   Order[]
+}
+
+model AgentMessage {
+  id        String       @id @default(cuid())
+  sessionId String
+  session   AgentSession @relation(fields: [sessionId], references: [id])
+  role      String // "user" | "assistant" | "tool"
+  content   Json
+  createdAt DateTime     @default(now())
+
+  @@index([sessionId])
+}
+
+model AuditLog {
+  id        String       @id @default(cuid())
+  sessionId String?
+  session   AgentSession? @relation(fields: [sessionId], references: [id])
+  action    String // tool/action name, e.g. "search_products", "create_payment"
+  input     Json
+  output    Json
+  reasoning String? // short human-readable explanation of why this action happened
+  success   Boolean
+  createdAt DateTime     @default(now())
+
+  @@index([sessionId])
+  @@index([action])
+}
+
+// ---------------------------------------------------------------------------
+// Orders + payments
+// ---------------------------------------------------------------------------
+
+enum OrderStatus {
+  PENDING // created, awaiting user confirmation
+  PAYMENT_PENDING // Razorpay order created, checkout opened, awaiting result
+  PAID // signature verified server-side
+  FAILED // payment attempt failed or was cancelled
+  CANCELLED
+}
+
+model Order {
+  id        String @id @default(cuid())
+  userId    String?
+  user      User?  @relation(fields: [userId], references: [id])
+  sessionId String?
+  session   AgentSession? @relation(fields: [sessionId], references: [id])
+
+  status   OrderStatus @default(PENDING)
+  subtotal Int // paise, server-calculated
+  shipping Int         @default(0)
+  total    Int // paise, server-calculated — never accepted from client/LLM input
+
+  razorpayOrderId   String? @unique
+  razorpayPaymentId String? @unique
+
+  items OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([userId])
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id])
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  unitPrice Int // paise, snapshot of Product.price at order-creation time
+}
