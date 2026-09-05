@@ -19,12 +19,12 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@google/genai": "^2.21.0",
     "@prisma/client": "^5.22.0",
     "cors": "^2.8.6",
     "cuid": "^3.0.0",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "openai": "latest",
     "razorpay": "^2.9.8",
     "zod": "^4.5.4"
   },

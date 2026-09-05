@@ -6,7 +6,7 @@
 //
 // `naturalLanguage` is kept alongside each case so the same dataset can
 // also drive the optional agent-layer eval (runAgentEval.ts), which DOES
-// require GEMINI_API_KEY and checks whether the model's actual behavior
+// require OPENAI_API_KEY and checks whether the model's actual behavior
 // respects these same constraints.
 
 export type EvalCase = {

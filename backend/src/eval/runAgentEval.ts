@@ -6,7 +6,7 @@
  * leaves behind (every search_products call it made, and what it
  * returned) to check the model's real behavior — not just the catalog's.
  *
- * Requires GEMINI_API_KEY to be set. This was NOT run in the sandbox
+ * Requires OPENAI_API_KEY to be set. This was NOT run in the sandbox
  * this project was built in (no API key available there) — run it
  * yourself with `npm run eval:agent` once you've set your key.
  */
@@ -15,8 +15,8 @@ import { runAgentTurn } from "@/agent/orchestrator";
 import { prisma } from "@/config/prisma";
 
 async function main() {
-  if (!process.env.GEMINI_API_KEY) {
-    console.error("GEMINI_API_KEY is not set — this eval requires a real agent to grade.");
+  if (!process.env.OPENAI_API_KEY) {
+    console.error("OPENAI_API_KEY is not set — this eval requires a real agent to grade.");
     process.exit(1);
   }
 
