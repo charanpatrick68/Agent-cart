@@ -1,414 +1,182 @@
 # AgentCart
 
-### From intent to checkout — AI-native commerce with controlled agentic payments.
-
-AgentCart is an AI-powered shopping platform that lets customers describe what they want in natural language. A shopping agent interprets that intent, searches a verified product catalog, checks inventory, and prepares an order.
-
-The critical difference is the payment boundary:
+**From intent to checkout — an AI shopping assistant that can recommend and prepare an order, but can never spend your money.**
 
 > **LLM proposes. Backend validates. User authorizes. Payment executes.**
 
-The AI agent can reason and interact with commerce tools, but it never receives direct access to payment credentials or the ability to initiate a charge.
-
-Built for the **Razorpay AI Buildathon 2026 — Track 1: AI Growth & Agentic Commerce.**
-
----
-
-# 🚀 What AgentCart Does
-
-A customer can simply say something like:
-
-> "I'm a CS student looking for a laptop under ₹70,000 for programming and occasional gaming."
-
-AgentCart then:
-
-1. Understands the customer's shopping intent
-2. Searches the verified product catalog
-3. Checks product availability and inventory
-4. Applies applicable offers
-5. Recommends suitable products
-6. Creates a server-validated pending order
-7. Shows the final amount to the customer
-8. Requires explicit user confirmation
-9. Creates the Razorpay payment
-10. Verifies the payment server-side
-11. Marks the order as paid only after successful verification
-
-The result is an agentic shopping experience without giving the AI direct financial authority.
-
----
-
-# 🧠 Core Architecture
-
-```text
-                    CUSTOMER
-                       │
-                       ▼
-              Natural-language intent
-                       │
-                       ▼
-              ┌─────────────────┐
-              │   AI Shopping   │
-              │      Agent      │
-              │  Google Gemini  │
-              └────────┬────────┘
-                       │
-                 Fixed tools
-                       │
-                       ▼
-              ┌─────────────────┐
-              │     Backend     │
-              │ Node + Express  │
-              └───────┬─────────┘
-                      │
-        ┌─────────────┼─────────────┐
-        ▼             ▼             ▼
-   PostgreSQL      Inventory     Offers
-        │
-        ▼
-   Pending Order
-        │
-        ▼
-   USER CONFIRMS
-        │
-        ▼
-   Razorpay Checkout
-        │
-        ▼
- Server-side signature verification
-        │
-        ▼
-      PAID
-```
-
----
-
-# 🔐 The Payment Safety Boundary
-
-AgentCart deliberately separates **AI reasoning** from **financial execution**.
-
-The agent has five commerce tools:
-
-```text
-search_products
-get_product
-check_inventory
-get_offer
-create_pending_order
-```
-
-There is intentionally **no payment tool exposed to the LLM**.
-
-The payment flow is:
-
-```text
-Customer: "I want this laptop."
-
-Agent:
-  search_products
-  check_inventory
-  → recommends a product
-
-Customer:
-  "I'll take it."
-
-Agent:
-  create_pending_order
-  → creates a PENDING order
-  → server calculates the total
-
-Frontend:
-  shows "Confirm & Pay ₹XX,XXX"
-
-Customer:
-  clicks "Confirm & Pay"
-
-Backend:
-  re-validates price + inventory
-  → creates Razorpay order
-
-Razorpay:
-  processes checkout
-  → returns payment signature
-
-Backend:
-  verifies signature server-side
-  → marks order PAID
-```
-
-### The key security principle
-
-> **AI has reasoning power, but not financial authority.**
-
-Prices, inventory, discounts and order totals are calculated and validated by the backend rather than trusted from LLM output.
-
----
-
-# ✨ Features
-
-## AI Shopping Agent
-
-- Natural-language shopping requests
-- Google Gemini tool/function calling
-- Structured commerce tools
-- Product recommendations grounded in the database
-- Multi-step agent orchestration
-- Session history
-- Agent audit logging
-
-## Verified Commerce Backend
-
-- PostgreSQL product catalog
-- Product search and filtering
-- Inventory validation
-- Product details
-- Offer/discount handling
-- Server-side order calculation
-- Pending-order workflow
-- Order lifecycle management
-
-## Secure Payments
-
-- Razorpay Test Mode integration
-- Server-side payment creation
-- Server-side signature verification
-- Payment idempotency
-- Explicit user authorization
-- No payment capability exposed to the LLM
-
-## Merchant Dashboard
-
-- Revenue overview
-- GMV
-- Paid orders
-- Failed orders
-- Average order value
-- Agent sessions
-- Searches performed
-- Checkouts initiated
-- Completed purchases
-- Tool-call success rate
-- Agent activity/audit trail
-
-## Evaluation
-
-AgentCart includes a deterministic catalog evaluation suite that validates:
-
-- Price constraints
-- Category constraints
-- Brand constraints
-- Inventory constraints
-- Impossible requirements
-- Multi-constraint queries
-- Out-of-stock handling
-- Cross-sell scenarios
-
----
-
-# 🛠️ Tech Stack
-
-| Layer | Technology |
+| | |
 |---|---|
-| Frontend | React, Vite, TypeScript |
-| Styling | Tailwind CSS |
-| Backend | Node.js, Express, TypeScript |
-| Database | PostgreSQL |
-| ORM | Prisma |
-| AI | Google Gemini API |
-| Payments | Razorpay Test Mode |
-| Validation | Zod |
+| **Live app** | `<FRONTEND_URL>` _(fill in after deploying — see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md))_ |
+| **API health** | `<BACKEND_URL>/api/health` |
+| **Demo video** | `<DEMO_VIDEO_URL>` |
+| **Demo logins** | customer `customer@agentcart.test` / `Customer@123` · merchant `merchant@agentcart.test` / `Merchant@123` |
 
 ---
 
-# 📁 Project Structure
+## Problem Statement
 
-```text
-agentcart/
-│
-├── frontend/
-│   └── src/
-│       ├── components/
-│       ├── pages/
-│       │   ├── customer/
-│       │   └── merchant/
-│       ├── hooks/
-│       ├── services/
-│       ├── types/
-│       └── utils/
-│
-├── backend/
-│   ├── src/
-│   │   ├── agent/
-│   │   │   ├── orchestrator.ts
-│   │   │   ├── systemPrompt.ts
-│   │   │   ├── toolSchemas.ts
-│   │   │   └── tools/
-│   │   ├── controllers/
-│   │   ├── services/
-│   │   ├── routes/
-│   │   ├── validators/
-│   │   ├── middleware/
-│   │   ├── config/
-│   │   └── eval/
-│   │
-│   └── prisma/
-│       ├── schema.prisma
-│       ├── seed.ts
-│       └── migrations/
-│
-├── docs/
-│   └── architecture.md
-│
-├── README.md
-└── .gitignore
-```
+Online stores make shoppers do the work: filter, compare spec sheets, open ten tabs. A conversational agent can do that legwork — but the moment you let an LLM near a payment flow, you inherit new risks: hallucinated prices, invented discounts, prompt injection through product descriptions, and "the model said it was paid" bugs.
 
----
+**AgentCart explores how to get the convenience of an AI shopping agent without giving it financial authority.**
 
-# ⚙️ Local Setup
+## Target Users
 
-## Prerequisites
+- **Customers** who know what they need ("a laptop under ₹70,000 for programming and some gaming") but not which model fits.
+- **Merchants** who want to see what the agent is doing on their store — revenue, conversion through the agent, and a full audit trail of every tool call.
 
-- Node.js 20+
-- PostgreSQL
-- Google Gemini API key
-- Razorpay Test Mode credentials
+## Solution
 
----
+A signed-in customer chats with a shopping agent. The agent can only act through five fixed backend tools (search, product details, inventory, offers, create *pending* order). Every price, stock level, discount and total comes from PostgreSQL — never from model output. The agent has **no payment tool at all**: charging requires the customer to click **Confirm & Pay**, after which the backend re-validates the order, creates a Razorpay payment, and only marks the order `PAID` after verifying Razorpay's HMAC signature server-side.
 
-## 1. Clone the repository
+## Key Features (the five workflows)
 
-```bash
-git clone <YOUR_GITHUB_REPOSITORY_URL>
-cd agentcart
-```
+1. **Accounts & access control** — email/password registration and login, JWT sessions, two roles (`CUSTOMER`, `MERCHANT`). Customers only ever see their own orders, payments and chats; the merchant dashboard is merchant-only. Merchant accounts cannot be created through sign-up.
+2. **AI shopping agent** — natural-language requests → grounded product search → inventory + offer checks → recommendation. Multi-step tool calling with a bounded loop, conversation history, and an audit log of every tool call.
+3. **Server-validated order creation** — the backend recomputes prices (applying only real, active offers), checks stock, rejects duplicates, and snapshots unit prices.
+4. **Secure payment** — Razorpay Test Mode. Re-validation before charge, server-side signature verification, idempotent completion (stock is decremented exactly once, inside a transaction), safe retry after a failed or abandoned checkout.
+5. **Merchant dashboard** — GMV, paid/failed orders, average order value, agent sessions, searches, checkouts, completed purchases, tool-call success rate, recent orders and the agent activity trail.
 
----
+Plus: **My orders** history for customers, and a deterministic catalog evaluation suite (29 cases).
 
-## 2. Configure the backend
+## Tech Stack
 
-```bash
-cd backend
-```
-
-Create your environment file:
-
-```bash
-cp .env.example .env
-```
-
-Add the required environment variables:
-
-```env
-DATABASE_URL=your_postgresql_connection_string
-
-GEMINI_API_KEY=your_gemini_api_key
-GEMINI_MODEL=your_gemini_model
-
-RAZORPAY_KEY_ID=your_razorpay_test_key_id
-RAZORPAY_KEY_SECRET=your_razorpay_test_secret
-```
-
-Never commit `.env` or expose secret keys publicly.
-
----
-
-## 3. Install backend dependencies
-
-```bash
-npm install
-```
-
-Generate Prisma Client:
-
-```bash
-npx prisma generate
-```
-
-Apply database migrations:
-
-```bash
-npx prisma migrate deploy
-```
-
-Seed the demo catalog:
-
-```bash
-npm run seed
-```
-
-Start the backend:
-
-```bash
-npm run dev
-```
-
-The backend runs on:
-
-```text
-http://localhost:4000
-```
-
----
-
-## 4. Start the frontend
-
-Open another terminal:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-The frontend runs on:
-
-```text
-http://localhost:5173
-```
-
-Open the displayed frontend URL in your browser.
-
----
-
-# 🔌 API
-
-All API routes are mounted under `/api`.
-
-| Method | Endpoint | Purpose |
+| Layer | Technology | Why |
 |---|---|---|
-| GET | `/health` | Server and database health |
-| GET | `/products` | Search and list products |
-| GET | `/products/:id` | Product details |
-| GET | `/products/:id/inventory` | Live inventory |
-| GET | `/products/meta/categories` | Product categories |
-| POST | `/chat` | Send a message to the shopping agent |
-| GET | `/chat/:sessionId/history` | Conversation history |
-| GET | `/chat/:sessionId/audit` | Agent audit trail |
-| POST | `/orders` | Create a pending order |
-| GET | `/orders/:id` | Order details |
-| POST | `/payments/create` | Create Razorpay payment |
-| POST | `/payments/verify` | Verify Razorpay payment |
-| POST | `/payments/abandon` | Abandon a checkout |
-| GET | `/merchant/overview` | Merchant metrics |
-| GET | `/merchant/orders` | Recent orders |
-| GET | `/merchant/activity` | Agent activity |
+| Frontend | React 19, Vite, TypeScript, Tailwind CSS, React Router | Fast SPA with typed API layer |
+| Backend | Node.js 22, Express 5, TypeScript | Thin REST API over a service layer |
+| Database | PostgreSQL + Prisma | Relational data (orders, inventory) needs transactions and constraints |
+| AI | Groq (OpenAI-compatible API, tool calling) | Low-latency tool use |
+| Payments | Razorpay (Test Mode) | Server-side order creation + HMAC signature verification |
+| Auth | bcrypt (`bcryptjs`), JSON Web Tokens | Stateless sessions that work across a Vercel frontend and a separate API |
+| Validation | Zod | One schema per endpoint, shared error format |
+| Security | helmet, CORS allow-list, express-rate-limit | Baseline hardening |
+| Tests / CI | Vitest, Supertest, Testing Library, GitHub Actions | 28 automated tests |
 
----
-
-# 📊 Evaluation Results
-
-AgentCart includes a deterministic catalog-layer evaluation suite that runs without an API key.
-
-The evaluation contains **29 structured test cases** covering normal queries, strict budgets, brand preferences, multi-constraint queries, out-of-stock scenarios, ambiguous requests, impossible requirements, above-budget requests and cross-sell scenarios.
-
-Results from the seeded catalog:
+## Architecture
 
 ```text
-AgentCart catalog-layer evaluation
-29 cases
-108 products returned
+Browser (React SPA)
+   │  Authorization: Bearer <JWT>
+   ▼
+Express API ── helmet · CORS allow-list · rate limits · Zod validation
+   │
+   ├─ /api/auth      register · login · me
+   ├─ /api/products  public catalog
+   ├─ /api/chat      requireAuth ─► Agent orchestrator ─► 5 fixed tools ─┐
+   ├─ /api/orders    requireAuth ─► ownership check                      │
+   ├─ /api/payments  requireAuth ─► ownership ─► revalidate ─► Razorpay  │
+   └─ /api/merchant  requireAuth + requireRole(MERCHANT)                 │
+                                                                         ▼
+                         Service layer (catalog · inventory · offers · orders · payments · audit)
+                                                  │
+                                              PostgreSQL
+```
 
+Key ideas (details in [docs/architecture.md](docs/architecture.md)):
+
+- **No code path from the LLM to money.** Tools wrap the same service layer as the REST routes; `create_payment` deliberately isn't a tool.
+- **Authorization is enforced in the API, not the UI.** Route guards in React only hide screens; every endpoint re-checks the token, the user's role (read from the database on each request) and resource ownership. Other users' orders return `404`, not `403`, so IDs can't be probed.
+- **Server-authoritative money.** Prices are integers in paise; totals are computed server-side; Razorpay signatures are verified with a constant-time compare.
+
+## Local Setup
+
+**Prerequisites:** Node.js 20+, PostgreSQL 14+, a [Groq API key](https://console.groq.com) (free), Razorpay **Test Mode** keys.
+
+```bash
+git clone https://github.com/charanpatrick68/Agent-cart.git
+cd Agent-cart            # or the folder you cloned into
+
+# 1. Backend
+cd backend
+cp .env.example .env     # then fill in the values (see below)
+npm install              # also runs `prisma generate`
+npx prisma migrate deploy
+npm run seed             # catalog + demo merchant/customer accounts
+npm run dev              # http://localhost:4000
+
+# 2. Frontend (new terminal)
+cd frontend
+cp .env.example .env     # defaults work for local dev
+npm install
+npm run dev              # http://localhost:5173  (proxies /api to :4000)
+```
+
+Open http://localhost:5173, create an account (or use a demo login) and ask the agent for a laptop.
+
+**Tests**
+
+```bash
+cd backend  && npm test        # 21 tests — auth, roles, ownership, payment verification (no DB needed)
+cd frontend && npm test        # 7 tests — route guards, login flow
+cd backend  && npm run eval    # 29-case deterministic catalog evaluation (needs the seeded DB)
+```
+
+## Environment Variables
+
+**Backend (`backend/.env`)** — never commit this file.
+
+| Variable | Required | Description |
+|---|---|---|
+| `DATABASE_URL` | yes | PostgreSQL connection string |
+| `JWT_SECRET` | yes | Signs login tokens. **≥ 32 random characters** (enforced when `NODE_ENV=production`) |
+| `JWT_EXPIRES_IN` | no | Token lifetime, default `7d` |
+| `GROQ_API_KEY` | for the agent | Groq API key |
+| `GROQ_MODEL` | no | Default `openai/gpt-oss-20b` |
+| `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` | for payments | Razorpay **Test Mode** keys |
+| `CORS_ORIGIN` | yes in prod | Frontend origin(s), comma separated, no trailing slash |
+| `TRUST_PROXY` | no | Set to `1` behind Render/Railway so rate limits see real client IPs |
+| `PORT`, `NODE_ENV` | no | Defaults `4000`, `development` |
+| `SEED_MERCHANT_PASSWORD`, `SEED_CUSTOMER_PASSWORD` | no | Override demo account passwords used by `npm run seed` |
+
+**Frontend (`frontend/.env`)**
+
+| Variable | Description |
+|---|---|
+| `VITE_API_BASE_URL` | Deployed API URL (empty in local dev) |
+| `VITE_DEMO_LOGINS` | `true` shows one-click demo accounts on the sign-in page |
+
+## Deployment
+
+Frontend on Vercel (or Netlify), API on Render, database on Neon/Render Postgres. Step-by-step instructions, including the Razorpay and CORS settings, are in **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**. A Render Blueprint (`render.yaml`) and SPA rewrite config are included.
+
+## API
+
+All routes are under `/api`. 🔒 = needs `Authorization: Bearer <token>`; 🏪 = merchant role only.
+
+| Method | Endpoint | Auth | Purpose |
+|---|---|---|---|
+| GET | `/health` | – | Server + database health |
+| POST | `/auth/register` | – | Create a customer account → `{ user, token }` |
+| POST | `/auth/login` | – | Sign in → `{ user, token }` |
+| GET | `/auth/me` | 🔒 | Current user |
+| GET | `/products`, `/products/:id`, `/products/:id/inventory`, `/products/meta/categories` | – | Public catalog |
+| POST | `/chat` | 🔒 | Send a message to the shopping agent (rate-limited) |
+| GET | `/chat/:sessionId/history`, `/chat/:sessionId/audit` | 🔒 owner | Own conversation / tool-call trail |
+| POST | `/orders` | 🔒 | Create a pending order (server-priced) |
+| GET | `/orders` | 🔒 | My orders |
+| GET | `/orders/:id` | 🔒 owner | Order details |
+| POST | `/payments/create` | 🔒 owner | Re-validate and create Razorpay payment |
+| POST | `/payments/verify` | 🔒 owner | Verify Razorpay signature, mark `PAID` |
+| POST | `/payments/abandon` | 🔒 owner | Mark an abandoned checkout retryable |
+| GET | `/merchant/overview`, `/merchant/orders`, `/merchant/activity` | 🏪 | Dashboard data |
+
+Errors always look like `{ "error": { "code": "…", "message": "…" } }`.
+
+## Security Notes
+
+- Passwords are hashed with bcrypt (cost 12); plaintext is never stored or logged. Login returns the same error for unknown email and wrong password and does equal work for both.
+- JWTs are HS256 with the algorithm pinned on verification; the user and role are re-read from the database on every request, so deleting an account or changing a role takes effect immediately.
+- Public sign-up can only create `CUSTOMER` accounts; a `role` field in the request body is ignored.
+- Orders, payments and chat sessions are scoped to their owner. Rate limits apply to auth endpoints (per IP) and the LLM-backed chat endpoint (per user).
+- Secrets live in environment variables; `.env` is git-ignored. Production refuses to boot with a short `JWT_SECRET`.
+- **Trade-off:** the token is kept in `localStorage` (simple and works across separate frontend/API domains). That makes an XSS bug more serious than with an `HttpOnly` cookie; the app renders no user HTML and ships helmet defaults on the API. Moving to cookies would need `SameSite=None` + CSRF protection and is the next hardening step.
+- Known limitation: no email verification or password reset yet.
+
+## Evaluation Results
+
+`npm run eval` runs 29 deterministic cases against the seeded catalog (budgets, brands, multi-constraint queries, out-of-stock, impossible requirements, cross-sell):
+
+```text
 Price violation rate:                       0.00%
 Category violation rate:                    0.00%
 Brand violation rate:                       0.00%
@@ -417,118 +185,32 @@ Impossible constraints returning results:   0/3
 Expected-result cases returning empty:      0/26
 ```
 
-### Catalog grounding
-
-Every product result comes directly from the backend's catalog search against PostgreSQL.
-
-The system does not provide the LLM with a path to invent products or bypass the catalog layer.
-
-The catalog evaluation proves that the commerce layer enforces its constraints independently of LLM behavior.
-
----
-
-# 🛡️ Security Principles
-
-### 1. The LLM cannot access the database directly
-
-The model interacts only through a fixed set of backend tools.
-
-### 2. The LLM cannot initiate payments
-
-There is deliberately no payment tool exposed to the agent.
-
-### 3. Financial values are server-authoritative
-
-Prices, discounts, inventory and order totals are recalculated by the backend.
-
-### 4. Payment requires explicit user authorization
-
-The frontend initiates payment only after the customer clicks the confirmation button.
-
-### 5. Razorpay signatures are verified server-side
-
-A successful frontend response alone is never trusted.
-
-### 6. Payment processing is idempotent
-
-Repeated payment-success handling does not repeatedly decrement inventory.
-
-### 7. Commerce data is observable
-
-Agent tool calls are recorded through an audit trail for merchant visibility.
-
----
-
-# 🎯 Why AgentCart?
-
-Traditional e-commerce:
+## Project Structure
 
 ```text
-Search → Filter → Compare → Cart → Checkout
+backend/
+  prisma/              schema, migrations, seed
+  src/
+    app.ts, index.ts   app factory / server bootstrap
+    agent/             orchestrator, system prompt, tool schemas, 5 tools
+    controllers/ routes/ validators/ services/ middleware/ config/ utils/
+    tests/             Vitest + Supertest (in-memory Prisma fake)
+    eval/              catalog + agent evaluation
+frontend/
+  src/ components/ context/ hooks/ pages/{auth,customer,merchant}/ services/ test/
+docs/                  architecture.md, DEPLOYMENT.md, SUBMISSION.md
+render.yaml            Render Blueprint for the API
+.github/workflows/     CI (typecheck, test, build for both apps)
 ```
 
-Agentic commerce:
+## Origins & Originality
 
-```text
-Intent → Reason → Search → Validate → Recommend → Authorize → Pay
-```
+AgentCart began as my entry to the Razorpay AI Buildathon 2026 (Track 1). For this end-term submission I extended it with user accounts, role-based access, per-user data ownership, order history, security hardening, automated tests, CI and deployment configuration. The commit history shows both phases. It uses open-source libraries (Express, Prisma, React, Vite, Tailwind, Zod, etc.) as listed in the `package.json` files; no existing application was forked.
 
-AgentCart explores how that transition can happen **without giving an autonomous model uncontrolled access to financial actions**.
+## AI Usage
 
-The design principle is simple:
+AI assistants (Claude, and Groq-hosted models inside the product itself) were used for code generation, refactoring, tests and documentation. All behaviour was reviewed and verified with the automated tests above.
 
-> **Let AI handle intent and reasoning.**
->
-> **Keep validation and money movement under deterministic backend control.**
+## License
 
----
-
-# 📚 Documentation
-
-Additional architecture and design decisions are available in:
-
-```text
-docs/architecture.md
-```
-
----
-
-# 🧪 Demo Flow
-
-For a complete demonstration:
-
-1. Open the customer shopping experience
-2. Enter a natural-language shopping request
-3. Let the agent search the catalog
-4. Review the recommendation
-5. Create the pending order
-6. Review the server-calculated total
-7. Click **Confirm & Pay**
-8. Complete the Razorpay Test Mode checkout
-9. Verify the payment
-10. Open the merchant dashboard
-11. Review the order and agent activity
-
----
-
-# ⚠️ Environment Variables
-
-Never commit real credentials.
-
-Keep secrets in environment variables:
-
-```text
-GEMINI_API_KEY
-RAZORPAY_KEY_SECRET
-DATABASE_URL
-```
-
-For production deployments, configure these through the hosting provider's secret/environment-variable system.
-
----
-
-# 📄 License
-
-Built as a hackathon submission for the **Razorpay AI Buildathon 2026**.
-
-No open-source license has been specified yet.
+No open-source license has been specified.

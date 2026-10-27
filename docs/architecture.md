@@ -23,7 +23,7 @@ Express API (Node + TS)
   │
   ├──► AI Agent Orchestrator (src/agent/orchestrator.ts)
   │       - builds the system prompt + JSON tool schema
-  │       - calls the Gemini API with tool-calling enabled
+  │       - calls the Groq API (OpenAI-compatible) with tool-calling enabled
   │       - dispatches each requested tool call to a fixed handler
   │       - logs every tool call + result to AuditLog before returning
   │       - the LLM's raw text/tool-call output is NEVER written to the
@@ -64,11 +64,27 @@ Concretely, for a purchase:
    verifies the Razorpay signature server-side before ever marking the
    order `PAID`. Frontend-reported "success" is never trusted on its own.
 
+## 3a. Authentication and authorization
+
+```
+POST /api/auth/register ─► bcrypt hash ─► User(role=CUSTOMER) ─► JWT
+POST /api/auth/login    ─► bcrypt compare (dummy hash if unknown email) ─► JWT
+every other protected request:
+  Authorization: Bearer <JWT> ─► verify (HS256 only) ─► load User from DB ─► req.user
+                                                       └─► requireRole / ownership check
+```
+
+- **Identity** — `requireAuth` verifies the token, then re-reads the user from PostgreSQL. A deleted account or a changed role is therefore effective on the very next request; the role claim inside the token is never trusted.
+- **Roles** — `CUSTOMER` can shop, chat and pay for their own orders. `MERCHANT` additionally reaches `/api/merchant/*`. Merchants can't be created through the API; the seed script (or a DBA) creates them.
+- **Ownership** — `Order.userId` and `AgentSession.userId` are set from the authenticated user, never from the request body. Reads, payment creation, verification and abandonment all go through `assertOrderOwner`, which answers `404` for someone else's order so ids can't be probed. Agent sessions work the same way; supplying another user's `sessionId` to `/api/chat` just starts a fresh session.
+- **The agent inherits the user's identity.** The orchestrator passes `userId` to each tool, so `create_pending_order` creates the order for the person who is chatting — the model has no way to choose a different owner.
+- **Abuse limits** — auth endpoints are rate-limited per IP; `/api/chat` (a paid LLM call) is rate-limited per user.
+
 ## 4. Database schema
 
 See `backend/prisma/schema.prisma` for the authoritative definition. Summary:
 
-- **User** — demo customers.
+- **User** — accounts. `email` is unique and stored lowercased; `passwordHash` is a bcrypt hash; `role` is `CUSTOMER` (default) or `MERCHANT`. `Order` and `AgentSession` both reference their owner.
 - **Product / Inventory / Offer** — the verified catalog. `Product.price` is
   in paise and is the only price the backend will ever charge against.
 - **AgentSession / AgentMessage** — conversation history per shopping session.
@@ -116,6 +132,10 @@ requirement for user confirmation before payment.
 | Model tries to trigger a payment via chat | Not possible structurally — there is no payment tool in the model's tool set at all. `POST /api/payments/create` is a REST endpoint the model cannot call; only the frontend calls it, only after a real button click. |
 | Razorpay payment fails or times out | Order stays `PAYMENT_PENDING`/reverts to a retryable state; nothing is marked `PAID` without a verified signature; no duplicate order or charge is created (idempotency key on the order). |
 | Frontend reports payment success incorrectly (bug or tampering) | Irrelevant — the backend only trusts its own server-side Razorpay signature verification. |
+| A customer tries to read or pay for someone else's order | `assertOrderOwner` returns 404 before any price, stock or Razorpay logic runs; covered by tests. |
+| A customer tries to open the merchant dashboard or call its API | UI shows a 403 page; the API returns 403 from `requireRole`, using the role stored in the database rather than the token. |
+| Stolen/expired/forged token | HS256-only verification, expiry, and a database lookup per request; the frontend clears the token and returns to the sign-in page on `INVALID_TOKEN`. |
+| Payment window closed or card declined | Order becomes `FAILED`; the customer can retry, which creates a fresh Razorpay order (PAID and CANCELLED orders can never be paid again). |
 | Merchant metrics get out of sync or fabricated | Dashboard metrics are computed as live queries over `Order`/`AuditLog`/etc. at read time, not maintained as a separate, driftable table. |
 
 ## 8. Scaling notes (for panel Q&A)
