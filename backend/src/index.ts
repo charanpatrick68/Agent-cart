@@ -1,29 +1,21 @@
-import express from "express";
-import cors from "cors";
 import { env } from "@/config/env";
-import { healthRouter } from "@/routes/health.routes";
-import { productRouter } from "@/routes/product.routes";
-import { chatRouter } from "@/routes/chat.routes";
-import { orderRouter } from "@/routes/order.routes";
-import { paymentRouter } from "@/routes/payment.routes";
-import { merchantRouter } from "@/routes/merchant.routes";
-import { errorHandler, notFoundHandler } from "@/middleware/errorHandler";
+import { prisma } from "@/config/prisma";
+import { createApp } from "@/app";
 
-const app = express();
+const app = createApp();
 
-app.use(cors({ origin: env.CORS_ORIGIN }));
-app.use(express.json());
-
-app.use("/api/health", healthRouter);
-app.use("/api/products", productRouter);
-app.use("/api/chat", chatRouter);
-app.use("/api/orders", orderRouter);
-app.use("/api/payments", paymentRouter);
-app.use("/api/merchant", merchantRouter);
-
-app.use(notFoundHandler);
-app.use(errorHandler);
-
-app.listen(env.PORT, () => {
-  console.log(`AgentCart backend listening on http://localhost:${env.PORT}`);
+const server = app.listen(env.PORT, () => {
+  console.log(`AgentCart backend listening on port ${env.PORT} (${env.NODE_ENV})`);
 });
+
+// Let in-flight requests finish when the host restarts or redeploys us.
+function shutdown(signal: string) {
+  console.log(`${signal} received — shutting down`);
+  server.close(async () => {
+    await prisma.$disconnect();
+    process.exit(0);
+  });
+  setTimeout(() => process.exit(1), 10_000).unref();
+}
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
