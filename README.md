@@ -6,9 +6,8 @@
 
 | | |
 |---|---|
-| **Live app** | `<FRONTEND_URL>` _(fill in after deploying — see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md))_ |
-| **API health** | `<BACKEND_URL>/api/health` |
-| **Demo video** | `<DEMO_VIDEO_URL>` |
+| **Live app** |https://agent-cart.onrender.com/|
+| **API health** |[ https://agentcart-backend-p6tv.onrender.com ](https://agentcart-backend-p6tv.onrender.com/api/health)|
 | **Demo logins** | customer `customer@agentcart.test` / `Customer@123` · merchant `merchant@agentcart.test` / `Merchant@123` |
 
 ---
