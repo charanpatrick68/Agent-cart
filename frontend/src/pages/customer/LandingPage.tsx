@@ -50,9 +50,6 @@ export function LandingPage() {
       <main className="mx-auto max-w-6xl px-6 py-16">
         <div className="grid grid-cols-1 gap-16 lg:grid-cols-5">
           <div className="lg:col-span-3">
-            <p className="font-mono text-xs uppercase tracking-wide text-ink-muted">
-              Razorpay AI Buildathon 2026 — Track 1
-            </p>
             <h1 className="mt-4 font-display text-4xl leading-tight text-ink sm:text-5xl">
               From intent to checkout — AI-native commerce with controlled agentic payments.
             </h1>
