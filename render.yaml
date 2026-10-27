@@ -1,0 +1,32 @@
+# Render Blueprint — deploys the API. The frontend goes on Vercel/Netlify (see docs/DEPLOYMENT.md).
+services:
+  - type: web
+    name: agentcart-api
+    runtime: node
+    rootDir: backend
+    plan: free
+    # --include=dev: TypeScript is a devDependency and NODE_ENV=production would skip it.
+    buildCommand: npm ci --include=dev && npm run build
+    # `npm start` applies pending Prisma migrations, then boots the server.
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TRUST_PROXY
+        value: "1"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-20b
+      # Secrets and per-deployment values — Render prompts for these on first deploy.
+      - key: DATABASE_URL
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
