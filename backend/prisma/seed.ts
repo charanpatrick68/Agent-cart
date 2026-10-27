@@ -1,4 +1,5 @@
 import { PrismaClient, Prisma, Product } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
@@ -430,7 +431,22 @@ const products: SeedProduct[] = [
 async function main() {
   console.log("Seeding database...");
 
-  // Clean slate for idempotent re-seeding in a demo environment.
+  // Re-seeding rebuilds the catalog and DELETES all orders, agent sessions and
+  // audit logs. On a live deployment that would wipe real customers' history,
+  // so refuse unless the catalog is empty or SEED_FORCE=1 is set explicitly.
+  if (process.env.NODE_ENV === "production" && process.env.SEED_FORCE !== "1") {
+    const existing = await prisma.product.count();
+    if (existing > 0) {
+      console.error(
+        `Refusing to re-seed: production database already has ${existing} products and re-seeding would delete all orders.\n` +
+          "Set SEED_FORCE=1 if you really want to reset it."
+      );
+      process.exit(1);
+    }
+  }
+
+  // Clean slate for the catalog and anything that references it. User accounts
+  // are deliberately NOT deleted — registered users keep their logins.
   await prisma.auditLog.deleteMany();
   await prisma.agentMessage.deleteMany();
   await prisma.orderItem.deleteMany();
@@ -439,7 +455,6 @@ async function main() {
   await prisma.offer.deleteMany();
   await prisma.inventory.deleteMany();
   await prisma.product.deleteMany();
-  await prisma.user.deleteMany();
 
   const createdProducts: Product[] = [];
   for (const p of products) {
@@ -495,13 +510,39 @@ async function main() {
 
   console.log(`Created ${offers.length} offers.`);
 
-  // A couple of demo users for testing order history / merchant views.
-  const demoUsers = await Promise.all([
-    prisma.user.create({ data: { name: "Aditi Rao", email: "aditi.demo@agentcart.test" } }),
-    prisma.user.create({ data: { name: "Rohan Mehta", email: "rohan.demo@agentcart.test" } }),
-  ]);
+  // Demo accounts. MERCHANT can't be self-registered through the API, so this
+  // is the only way a merchant login comes to exist. Override the passwords
+  // with SEED_MERCHANT_PASSWORD / SEED_CUSTOMER_PASSWORD for a real deployment.
+  const demoAccounts = [
+    {
+      name: "Demo Merchant",
+      email: "merchant@agentcart.test",
+      password: process.env.SEED_MERCHANT_PASSWORD ?? "Merchant@123",
+      role: "MERCHANT" as const,
+    },
+    {
+      name: "Demo Customer",
+      email: "customer@agentcart.test",
+      password: process.env.SEED_CUSTOMER_PASSWORD ?? "Customer@123",
+      role: "CUSTOMER" as const,
+    },
+  ];
 
-  console.log(`Created ${demoUsers.length} demo users.`);
+  // Accounts from the pre-auth version of the seed have no password.
+  await prisma.user.deleteMany({
+    where: { email: { in: ["aditi.demo@agentcart.test", "rohan.demo@agentcart.test"] } },
+  });
+
+  for (const account of demoAccounts) {
+    const passwordHash = await bcrypt.hash(account.password, 12);
+    await prisma.user.upsert({
+      where: { email: account.email },
+      update: { name: account.name, passwordHash, role: account.role },
+      create: { name: account.name, email: account.email, passwordHash, role: account.role },
+    });
+  }
+
+  console.log(`Upserted ${demoAccounts.length} demo accounts (${demoAccounts.map((a) => a.email).join(", ")}).`);
   console.log("Seed complete.");
 }
 
