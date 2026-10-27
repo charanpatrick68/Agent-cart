@@ -53,7 +53,7 @@ SEED_CUSTOMER_PASSWORD="<choose one>" \
 npm run seed
 ```
 
-This creates ~100 products with inventory and offers, plus `merchant@agentcart.test` and `customer@agentcart.test`.
+This creates 33 products with inventory, 3 offers, plus `merchant@agentcart.test` and `customer@agentcart.test`.
 In production the seed refuses to run again on a populated database (it would delete orders) unless you set `SEED_FORCE=1`.
 
 If you choose passwords other than the defaults, the one-click buttons on the sign-in page (`VITE_DEMO_LOGINS`) will not match — either keep the defaults for the public demo, or leave `VITE_DEMO_LOGINS` off and give evaluators the credentials in the submission form.
