@@ -16,14 +16,21 @@ datasource db {
 // Users
 // ---------------------------------------------------------------------------
 
-model User {
-  id        String         @id @default(cuid())
-  name      String
-  email     String         @unique
-  createdAt DateTime       @default(now())
+enum Role {
+  CUSTOMER // can shop, chat with the agent, and pay for their own orders
+  MERCHANT // can additionally view the merchant dashboard (never self-assignable)
+}
 
-  orders    Order[]
-  sessions  AgentSession[]
+model User {
+  id           String         @id @default(cuid())
+  name         String
+  email        String         @unique // always stored lowercased
+  passwordHash String // bcrypt hash — the plaintext password is never stored
+  role         Role           @default(CUSTOMER)
+  createdAt    DateTime       @default(now())
+
+  orders       Order[]
+  sessions     AgentSession[]
 }
 
 // ---------------------------------------------------------------------------
