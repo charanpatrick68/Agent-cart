@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { SiteHeader } from "@/components/SiteHeader";
 import { api, ApiRequestError } from "@/services/api";
 import { OrderSummaryCard } from "@/components/OrderSummaryCard";
 import type { ChatResponse } from "@/types/api";
@@ -51,16 +51,7 @@ export function ShopPage() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="border-b border-line">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
-          <Link to="/" className="font-display text-lg text-ink">
-            AgentCart
-          </Link>
-          <Link to="/merchant" className="text-sm text-ink-muted hover:text-ink">
-            Merchant view
-          </Link>
-        </div>
-      </header>
+      <SiteHeader widthClass="max-w-3xl" />
 
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-8">
         {entries.length === 0 && (

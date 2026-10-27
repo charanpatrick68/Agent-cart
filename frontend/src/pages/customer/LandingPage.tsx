@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import { useBackendHealth } from "@/hooks/useBackendHealth";
 import { StatusPill } from "@/components/StatusPill";
+import { SiteHeader } from "@/components/SiteHeader";
+import { useAuth } from "@/context/AuthContext";
 
 const flowSteps = [
   {
@@ -39,22 +41,11 @@ function ConnectivityBadge() {
 }
 
 export function LandingPage() {
+  const { user } = useAuth();
+
   return (
     <div className="min-h-screen">
-      <header className="border-b border-line">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <span className="font-display text-lg">AgentCart</span>
-          <nav className="flex items-center gap-6 text-sm text-ink-muted">
-            <Link to="/shop" className="hover:text-ink">
-              Shop
-            </Link>
-            <Link to="/merchant" className="hover:text-ink">
-              Merchant
-            </Link>
-            <ConnectivityBadge />
-          </nav>
-        </div>
-      </header>
+      <SiteHeader extra={<ConnectivityBadge />} />
 
       <main className="mx-auto max-w-6xl px-6 py-16">
         <div className="grid grid-cols-1 gap-16 lg:grid-cols-5">
@@ -72,17 +63,26 @@ export function LandingPage() {
             </p>
             <div className="mt-8 flex gap-3">
               <Link
-                to="/shop"
+                to={user ? "/shop" : "/register"}
                 className="rounded-md bg-accent px-5 py-2.5 text-sm font-medium text-accent-ink hover:opacity-90"
               >
-                Try the shopping agent
+                {user ? "Try the shopping agent" : "Get started — it's free"}
               </Link>
-              <Link
-                to="/merchant"
-                className="rounded-md border border-line px-5 py-2.5 text-sm font-medium text-ink hover:border-ink/40"
-              >
-                View merchant dashboard
-              </Link>
+              {user?.role === "MERCHANT" ? (
+                <Link
+                  to="/merchant"
+                  className="rounded-md border border-line px-5 py-2.5 text-sm font-medium text-ink hover:border-ink/40"
+                >
+                  Merchant dashboard
+                </Link>
+              ) : !user ? (
+                <Link
+                  to="/login"
+                  className="rounded-md border border-line px-5 py-2.5 text-sm font-medium text-ink hover:border-ink/40"
+                >
+                  Sign in
+                </Link>
+              ) : null}
             </div>
           </div>
 

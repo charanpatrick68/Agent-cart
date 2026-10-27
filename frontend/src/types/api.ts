@@ -113,3 +113,22 @@ export type MerchantOrderSummary = {
   itemCount: number;
   createdAt: string;
 };
+
+export type UserRole = "CUSTOMER" | "MERCHANT";
+
+export type AuthUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  createdAt: string;
+};
+
+export type AuthResponse = {
+  user: AuthUser;
+  token: string;
+};
+
+export type MyOrdersResponse = {
+  orders: OrderDTO[];
+};

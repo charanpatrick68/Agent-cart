@@ -4,6 +4,7 @@ import { api } from "@/services/api";
 import { formatPaise } from "@/utils/currency";
 import { useOrderPayment } from "@/hooks/useOrderPayment";
 import { StatusPill } from "@/components/StatusPill";
+import { SiteHeader } from "@/components/SiteHeader";
 import type { OrderDTO } from "@/types/api";
 
 const STATUS_COPY: Record<OrderDTO["status"], { tone: "success" | "warning" | "danger" | "neutral"; label: string; message: string }> = {
@@ -57,6 +58,8 @@ export function PaymentStatusPage() {
   }, [orderId]);
 
   return (
+    <div className="min-h-screen">
+    <SiteHeader widthClass="max-w-3xl" />
     <div className="mx-auto max-w-xl px-6 py-16">
       <Link to="/shop" className="font-mono text-xs text-ink-muted hover:text-ink">
         ← back to shop
@@ -109,6 +112,7 @@ export function PaymentStatusPage() {
           )}
         </div>
       )}
+    </div>
     </div>
   );
 }

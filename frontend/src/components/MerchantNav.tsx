@@ -1,4 +1,5 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 
 const links = [
   { to: "/merchant", label: "Overview" },
@@ -8,6 +9,9 @@ const links = [
 
 export function MerchantNav() {
   const { pathname } = useLocation();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
   return (
     <header className="border-b border-line">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
@@ -27,9 +31,25 @@ export function MerchantNav() {
             ))}
           </nav>
         </div>
-        <Link to="/shop" className="text-sm text-ink-muted hover:text-ink">
-          Customer view
-        </Link>
+        <div className="flex items-center gap-4 text-sm">
+          <Link to="/shop" className="text-ink-muted hover:text-ink">
+            Customer view
+          </Link>
+          {user && (
+            <>
+              <span className="hidden text-ink-muted sm:inline">{user.name}</span>
+              <button
+                onClick={() => {
+                  logout();
+                  navigate("/", { replace: true });
+                }}
+                className="rounded-md border border-line px-3 py-1.5 text-ink hover:border-ink/40"
+              >
+                Sign out
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </header>
   );
