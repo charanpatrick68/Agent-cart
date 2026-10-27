@@ -39,6 +39,7 @@ function getClient(): OpenAI {
 // The model can ONLY call these backend functions.
 type ToolContext = {
   sessionId: string;
+  userId: string;
 };
 
 const toolHandlers: Record<
@@ -66,11 +67,15 @@ export type AgentTurnResult = {
 };
 
 async function getOrCreateSession(
+  userId: string,
   sessionId?: string
 ): Promise<string> {
   if (sessionId) {
-    const existing = await prisma.agentSession.findUnique({
-      where: { id: sessionId },
+    // Only resume a session that belongs to this user. Anything else
+    // (unknown id, or someone else's session) silently starts a fresh one,
+    // so a guessed id never exposes another user's conversation.
+    const existing = await prisma.agentSession.findFirst({
+      where: { id: sessionId, userId },
     });
 
     if (existing) {
@@ -79,7 +84,7 @@ async function getOrCreateSession(
   }
 
   const created = await prisma.agentSession.create({
-    data: {},
+    data: { userId },
   });
 
   return created.id;
@@ -250,10 +255,11 @@ async function callModel(
 
 export async function runAgentTurn(
   userMessage: string,
-  sessionId?: string
+  opts: { userId: string; sessionId?: string }
 ): Promise<AgentTurnResult> {
+  const { userId } = opts;
   const resolvedSessionId =
-    await getOrCreateSession(sessionId);
+    await getOrCreateSession(userId, opts.sessionId);
 
   const client = getClient();
 
@@ -400,6 +406,7 @@ export async function runAgentTurn(
             parsedArgs,
             {
               sessionId: resolvedSessionId,
+              userId,
             }
           );
 

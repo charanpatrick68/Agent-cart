@@ -26,6 +26,8 @@ export type OrderDTO = {
   createdAt: string;
 };
 
+const PAYABLE_STATUSES = ["PENDING", "PAYMENT_PENDING", "FAILED"];
+
 const FLAT_SHIPPING = 0; // free shipping for the demo catalog; kept explicit rather than implicit
 
 function toOrderDTO(order: any): OrderDTO {
@@ -138,6 +140,32 @@ export async function createPendingOrder(params: {
   return toOrderDTO(order);
 }
 
+/**
+ * Throws a 404 unless the order exists AND belongs to `userId`. A 404 (not
+ * 403) is returned for other people's orders so order ids can't be probed.
+ */
+export async function assertOrderOwner(orderId: string, userId: string): Promise<void> {
+  const order = await prisma.order.findUnique({ where: { id: orderId }, select: { userId: true } });
+  if (!order || order.userId !== userId) {
+    throw new AppError(404, `Order ${orderId} not found`, "ORDER_NOT_FOUND");
+  }
+}
+
+export async function getOrderForUser(orderId: string, userId: string): Promise<OrderDTO> {
+  await assertOrderOwner(orderId, userId);
+  return getOrderById(orderId);
+}
+
+export async function listOrdersForUser(userId: string, limit = 50): Promise<OrderDTO[]> {
+  const orders = await prisma.order.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    take: limit,
+    include: { items: { include: { product: true } } },
+  });
+  return orders.map(toOrderDTO);
+}
+
 export async function getOrderById(orderId: string): Promise<OrderDTO> {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
@@ -167,7 +195,11 @@ export async function revalidatePendingOrder(orderId: string): Promise<OrderDTO>
   if (!order) {
     throw new AppError(404, `Order ${orderId} not found`, "ORDER_NOT_FOUND");
   }
-  if (order.status !== "PENDING") {
+  // PENDING is the normal case. FAILED / PAYMENT_PENDING are allowed so a
+  // customer can retry after closing the Razorpay window or a failed card —
+  // a fresh Razorpay order is created for each attempt. PAID and CANCELLED
+  // orders can never be paid again.
+  if (!PAYABLE_STATUSES.includes(order.status)) {
     throw new AppError(409, `Order ${orderId} is not awaiting payment (status: ${order.status})`, "INVALID_ORDER_STATE");
   }
 

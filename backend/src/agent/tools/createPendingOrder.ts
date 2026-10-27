@@ -1,7 +1,7 @@
 import { createPendingOrder } from "@/services/orderService";
 import { AppError } from "@/middleware/errorHandler";
 
-export async function createPendingOrderTool(rawInput: any, ctx: { sessionId: string }) {
+export async function createPendingOrderTool(rawInput: any, ctx: { sessionId: string; userId: string }) {
   const items = rawInput?.items;
   if (!Array.isArray(items) || items.length === 0) {
     return { error: "items must be a non-empty array of { productId, quantity }" };
@@ -11,6 +11,7 @@ export async function createPendingOrderTool(rawInput: any, ctx: { sessionId: st
     const order = await createPendingOrder({
       items: items.map((i: any) => ({ productId: i.productId, quantity: Number(i.quantity) })),
       sessionId: ctx.sessionId,
+      userId: ctx.userId,
     });
     return {
       orderId: order.id,

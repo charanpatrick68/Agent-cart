@@ -35,7 +35,8 @@ export type CreatePaymentResult = {
  * (including the agent) cannot pass an amount here; the amount charged is
  * always the order's own server-computed `total`.
  */
-export async function createPayment(orderId: string): Promise<CreatePaymentResult> {
+export async function createPayment(orderId: string, userId: string): Promise<CreatePaymentResult> {
+  await orderService.assertOrderOwner(orderId, userId);
   const order = await orderService.revalidatePendingOrder(orderId);
 
   if (order.total <= 0) {
@@ -69,6 +70,7 @@ export async function createPayment(orderId: string): Promise<CreatePaymentResul
 }
 
 export type VerifyPaymentInput = {
+  userId: string;
   orderId: string;
   razorpayOrderId: string;
   razorpayPaymentId: string;
@@ -86,6 +88,7 @@ export async function verifyPayment(input: VerifyPaymentInput): Promise<{ status
     throw new AppError(503, "Payments are not configured on this server yet.", "PAYMENTS_NOT_CONFIGURED");
   }
 
+  await orderService.assertOrderOwner(input.orderId, input.userId);
   const order = await orderService.getOrderById(input.orderId);
 
   // Idempotency: if this order was already marked PAID by an earlier call
@@ -122,7 +125,11 @@ export async function verifyPayment(input: VerifyPaymentInput): Promise<{ status
  * timed out (not a signature-verification failure, just "didn't complete").
  * Leaves the order in a clearly failed, retryable state rather than PAID.
  */
-export async function markPaymentAbandoned(orderId: string): Promise<{ status: string; orderId: string }> {
+export async function markPaymentAbandoned(
+  orderId: string,
+  userId: string
+): Promise<{ status: string; orderId: string }> {
+  await orderService.assertOrderOwner(orderId, userId);
   const order = await orderService.getOrderById(orderId);
   if (order.status === "PAID") {
     // Don't downgrade an already-paid order just because the client
