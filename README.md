@@ -8,6 +8,7 @@
 |---|---|
 | **Live app** |https://agent-cart.onrender.com/|
 | **API health** |[ https://agentcart-backend-p6tv.onrender.com ](https://agentcart-backend-p6tv.onrender.com/api/health)|
+| **Demo video** | https://drive.google.com/file/d/1UCyDRdMecaKruxTGkvRUDT8JG4mFDNlY/view?usp=sharing |
 | **Demo logins** | customer `customer@agentcart.test` / `Customer@123` · merchant `merchant@agentcart.test` / `Merchant@123` |
 
 ---
